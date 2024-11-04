@@ -1,0 +1,315 @@
+
+
+data base access KP
+--------------------------------------------
+teaching2024@!
+huseyin123
+--------------------------------------------
+
+before submission
+
+- overwrite task 3 with new code
+- make sure everything generates and is up to date files 
+- make sure zipped/referenced 
+- name folder > sNumber1-sNumber2-assignment2.zip
+
+ 
+#By s4115482 and s3660418
+
+import os
+from cryptography.hazmat.primitives.asymmetric import rsa, padding, utils
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+import datetime
+
+
+#  -------- resources (external) --------
+# documentation used for RSA Asymmetric 
+# https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa/
+
+
+#-------- code used from uni --------
+# This code was developed from the base code /(Assemetric)/RSA_file from Lectorial 6.
+# The parts of the code that are inspired from lecture material are:  
+# def generate_keys(): func
+# encrypt_file func 
+# decrypt_file func 
+# sign_data func
+# verify_signature func 
+# BASE Variable
+# Main function 
+# these have been altered inconjunction with the official documentation by the library creater
+
+# -------- Logic --------
+# generate the keys with params
+# write them to designated file
+# encrypt text using rsa
+# use signature on encrypted ct file
+
+# verify signature on ct file
+# then start decrypting
+# display output in file / terminal 
+
+
+BASE = os.path.dirname(os.path.abspath(__file__))
+
+#-------- functions --------
+
+def generate_keys(keysize):
+    # Generate a private RSA key
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=keysize, # change this to 2048 bits / measured in bits 
+    )
+    # getting pub key from the priv key to get pub key
+    public_key = private_key.public_key()
+    return private_key, public_key
+
+def encrypt_file(file_path, public_key, output_path):
+    # Read the plaintext data from the file
+    with open(file_path, "rb") as file: #read bytes 
+        plaintext = file.read()
+
+    # Encrypt the data using OAEP padding
+    ciphertext = public_key.encrypt( 
+        plaintext,
+        padding.OAEP( # optimal Asymmetric Encryption Padding as mentioned in library documentation
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+    # Write the encrypted data to the specified output file
+    with open(output_path, "wb") as file: # write bytes
+        file.write(ciphertext)
+        
+# signature func
+# takes in read of encrypted file as param (ciphertext)which is specified in the smallbit()/bigbit() func
+def Signature(EnryptedData, private_key): 
+    signature = private_key.sign(
+        EnryptedData,
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+    return signature
+
+
+
+# verifying the signature taking plaintext as the param 
+def verify_signature(plaintext, signature, public_key):
+    try:
+        public_key.verify(
+            signature,
+            plaintext,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        return True
+    except Exception as e:  # verification failer exeption 
+        print(f"Signature verification failed: {e}")
+        return False
+
+def decrypt_file(encrypted_file_path, private_key, output_path):
+    # Read the encrypted data
+    with open(encrypted_file_path, "rb") as file: #read bytes
+        ciphertext = file.read()
+
+    # Decrypt the data using OAEP padding
+    plaintext = private_key.decrypt(
+        ciphertext,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+    # Write the decrypted data back to the specified output file
+    with open(output_path, "wb") as file: # write bytes
+        file.write(plaintext)
+
+    return plaintext
+
+    # Write the decrypted data back to the specified output file
+    with open(output_path, "wb") as file: # write bytes
+        file.write(plaintext)
+
+
+# functions for calculating execution time 
+# self created
+def TimeS ():
+    #calculates time from now (start of program executes)
+    nowTime = datetime.datetime.now() 
+    return nowTime
+
+def EndS (): 
+    #calculates time from now (end of program executes)
+    EndTime = datetime.datetime.now()
+    return EndTime
+
+def ExecutionTime(nowTime, EndTime):
+    #computes now time from start of program and "start" from end of program
+    #subtracts start program time from end of program start time to get = run time duration of function
+    exectime = EndTime - nowTime
+    return exectime
+    
+    print (exectime)
+
+
+def Smallbit():
+    startTime = TimeS()
+    # define key size here so its used to generate desired key size without  re-making function
+    private_key, public_key = generate_keys(keysize=1024)
+    
+    # priv/pub keys
+    private_key_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM, # encoding key
+        format=serialization.PrivateFormat.PKCS8, # formating
+        encryption_algorithm=serialization.NoEncryption() # encrypting using algo "NoEncryption()"
+        
+        
+    )
+    public_key_pem = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    # defining paths for keys
+    keyFilePriv1024 = os.path.join(BASE, "keys", "task3KeyPriv1024.txt")
+    keyFilePub1024 = os.path.join(BASE, "keys", "task3KeyPub1024.txt")
+    # writing keys to do this directory and file 
+    with open(keyFilePriv1024, 'wb') as f:
+        f.write(b"Private Key:")
+        f.write(private_key_pem)
+    with open (keyFilePub1024, 'wb') as f: 
+        f.write(b"Public Key:")
+        f.write(public_key_pem)
+    
+    print("Private Key:","\n", private_key_pem.decode('utf-8'))
+    print("Public Key:","\n", public_key_pem.decode('utf-8'))
+
+    # defining file paths
+    original_file = os.path.join(BASE, "input", "task3.txt")
+    encrypted_file = os.path.join(BASE, "output", "task3_enc1024.txt")
+    decrypted_filePath = os.path.join(BASE, "output", "task3_dec1024.txt")
+
+    # call encrypt func - uses rsa 
+    encrypt_file(original_file, public_key, encrypted_file)
+    print('─' * 10) 
+    print("signing encrypted file ")
+        # sign the encrypted data within the file 
+    with open(encrypted_file, "rb") as file:
+        original_data_Enc = file.read()
+    signature = Signature(original_data_Enc, private_key)
+    print('─' * 10) 
+
+    # verifing signature
+    ValidSig = verify_signature(original_data_Enc, signature, public_key)
+    print(f"Signature valid: {ValidSig}")
+    print("Signature:\n", signature.hex())
+
+    print('─' * 10) 
+    print ("signature verified now decrypting ")
+    print('─' * 10) 
+
+
+    # decrypts file after verifying sig
+    a = decrypt_file(encrypted_file, private_key, decrypted_filePath)
+    print("output of decryption:\n", a) 
+    print("Check outputdirectory for answer\n", a) 
+    print('─' * 10) 
+    
+
+    # stop timer
+    EndTimer = EndS()
+    #calculating total time for 1024 key size
+    time1 = ExecutionTime(startTime,EndTimer)
+
+    return time1 
+
+# func is exact same as "smallbit()" just different keysize 
+def BigBit ():
+    startTime = TimeS()
+    # define key size here so its used to generate desired key size without re-making the func
+    private_key, public_key = generate_keys(keysize=2048)
+    
+    # generating priv/pub keys
+    private_key_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+        
+    )
+    public_key_pem = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    keyFilePriv2048 = os.path.join(BASE, "keys", "task3KeyPriv2048.txt")
+    keyFilePub2048 = os.path.join(BASE, "keys", "task3KeyPub2048.txt")
+    # writing keys to do this directory and file 
+    with open(keyFilePriv2048, 'wb') as f:
+        f.write(b"Private Key:")
+        f.write(private_key_pem)
+    with open (keyFilePub2048, 'wb') as f: 
+        f.write(b"Public Key:")
+        f.write(public_key_pem)
+    
+    print("Private Key:","\n", private_key_pem.decode('utf-8'))
+    print("Public Key:","\n", public_key_pem.decode('utf-8'))
+
+    # defining file paths
+    original_file = os.path.join(BASE, "input", "task3.txt")
+    encrypted_file = os.path.join(BASE, "output", "task3_enc2048.txt")
+    decrypted_file = os.path.join(BASE, "output", "task3_dec2048.txt")
+
+    # call encrypt func - uses rsa 
+    encrypt_file(original_file, public_key, encrypted_file)
+    print('─' * 10) 
+    print("signing encrypted file ")
+    
+    # sign the encrypted data
+    with open(encrypted_file, "rb") as file:
+        original_data_Enc = file.read()
+    signature = Signature(original_data_Enc, private_key)
+    print('─' * 10) 
+
+    # verifing signature
+    ValidSig = verify_signature(original_data_Enc, signature, public_key)
+    print(f"Signature valid: {ValidSig}")
+    print("Signature:\n", signature.hex())
+
+    print('─' * 10) 
+    print ("signature verified now decrypting ")
+    print('─' * 10) 
+
+
+    # decrypts file
+    a = decrypt_file(encrypted_file, private_key, decrypted_file)
+    print("output of decryption:\n", a) 
+    print('─' * 10) 
+    
+
+
+    EndTimer = EndS()
+    time2 = ExecutionTime(startTime,EndTimer)
+    return time2
+
+# function to pass time 1 and 2 results and compare to get the difference in execution
+def timeComparison(time1,time2):
+    print("Execution time for 1024-bit key: ", time1)
+    print("Execution time for 2048-bit key: ", time2)
+    difference = time2 - time1 
+    print("The difference between the two keys in time is: ", difference)
+
+
+#call func that execute other functions to make the program run
+# assinging them to time to get exec time
+time1 = Smallbit()
+time2 = BigBit()
+#passing return of smallbit/bigbit to compare timescale 
+timeComparison(time1 , time2)

@@ -1,0 +1,5 @@
+-- to refresh and delete tables
+--  DELETE FROM PreferenceTallyPerRoundPerCandidate
+--  DELETE FROM PrefCountRecord
+-- to run 
+-- EXEC PrimaryVoteCount @DivisionName = 'Bennelong', @ElectionEventID = 10 
